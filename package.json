@@ -1,0 +1,40 @@
+{
+  "name": "ytbla",
+  "productName": "ytbla",
+  "version": "1.0.0",
+  "description": "Distraction-free player for a single YouTube video",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --publish never",
+    "release": "electron-builder --publish always"
+  },
+  "license": "ISC",
+  "type": "commonjs",
+  "build": {
+    "appId": "dev.kshavrukov.ytbla",
+    "files": ["src/**/*", "package.json"],
+    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+    "mac": {
+      "category": "public.app-category.video",
+      "target": [{ "target": "dmg", "arch": ["universal"] }],
+      "identity": "-",
+      "hardenedRuntime": false
+    },
+    "win": {
+      "target": [{ "target": "nsis", "arch": ["x64", "arm64"] }]
+    },
+    "nsis": {
+      "oneClick": true,
+      "artifactName": "${productName}-${version}-win-setup.${ext}"
+    },
+    "linux": {
+      "target": [{ "target": "AppImage", "arch": ["x64"] }],
+      "category": "AudioVideo"
+    }
+  },
+  "devDependencies": {
+    "electron": "^45.2.2",
+    "electron-builder": "^26.18.0"
+  }
+}
