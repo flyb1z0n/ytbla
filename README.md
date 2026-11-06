@@ -1,6 +1,14 @@
-# ytbla
+<div align="center">
+  <img src="build/icon.png" width="160" height="160" alt="">
+  <h1>ytbla</h1>
+  <p><b>A minimal background-music player for your second screen</b></p>
+  <p><a href="https://github.com/flyb1z0n/ytbla/releases/latest">Download for macOS, Windows, and Linux</a></p>
+  <br>
+</div>
 
-A minimal desktop player for background music and ambient YouTube streams.
+<p align="center">
+  <img src="docs/screenshot.jpg" width="820" alt="ytbla playing the Lofi Girl stream, with the small control pill at the bottom">
+</p>
 
 Pick a lofi stream (or paste any YouTube link) and ytbla plays it as a single clean, borderless picture: no recommendations, comments, titles, end screens, or hover overlays. It's meant to be dragged onto a second monitor, made full screen, and left playing while you work.
 
@@ -15,6 +23,19 @@ YouTube is a great source of music streams, but a browser tab doesn't work well 
 - **Curated presets.** Ships with Claude FM, Lofi Girl, and Lofi Girl synthwave. You can also paste any YouTube video, live stream, or `youtu.be` link.
 - **Remembers your setup.** The last stream, volume, and mute state are restored on launch, so it starts playing right away.
 - **Quiet volume control.** Scroll anywhere over the video to change the volume, with fine 1% steps while holding Shift.
+
+<p align="center">
+  <img src="docs/stream-picker.jpg" width="820" alt="The stream picker with three preset streams and a field for a YouTube link">
+</p>
+
+## What it isn't
+
+ytbla does one thing, and leaves the rest out on purpose:
+
+- **Not a YouTube client.** There's no search, no subscriptions, no comments, and no account.
+- **Not a playlist manager.** It plays one stream at a time. Switching is a key press away, but there's no queue.
+- **Not a visualizer or a mixer.** The picture is whatever the stream shows, and the only audio control is volume.
+- **Not busy.** Anything that would draw your eye away from work is either hidden or fades out.
 
 ## Install
 
@@ -45,20 +66,8 @@ The builds are not notarized or code-signed:
 
 ## Development
 
-You need Node.js 22 or later.
+See [DEVELOPMENT.md](DEVELOPMENT.md) for running the app locally, how it's put together, and how releases are published.
 
-```sh
-npm install
-npm start        # run the app
-npm run dist     # build installers for the current OS into dist/
-```
+## License
 
-The app is plain Electron with no framework or build step:
-
-- `src/main.js` creates the window, serves the player page from a local HTTP server (YouTube refuses to play embeds from `file://`), injects CSS into the YouTube iframe to hide its UI, handles moving between displays, and stores settings in the app's user data folder.
-- `src/player.html` contains the player page: the YouTube IFrame API, the auto-hiding controls, the stream picker, and keyboard and mouse handling.
-- `src/preload.js` provides the small bridge between the two.
-
-## Releases
-
-Every merge to `main` that changes more than Markdown files bumps the patch version, builds macOS, Windows, and Linux installers in GitHub Actions, and publishes them as a GitHub release.
+[ISC](LICENSE)
