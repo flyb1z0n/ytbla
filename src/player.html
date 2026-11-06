@@ -5,7 +5,7 @@
     <title>ytbla</title>
     <style>
       html, body { margin: 0; height: 100%; overflow: hidden; background: #000; }
-      body.idle, body.idle * { cursor: none !important; }
+      body.idle:not(.picking), body.idle:not(.picking) * { cursor: none !important; }
       #player { position: fixed; inset: 0; width: 100vw; height: 100vh; border: 0; }
       /* Swallows mouse input so YouTube never shows hover overlays. */
       #shield { position: fixed; inset: 0; z-index: 10; }
@@ -29,6 +29,52 @@
       #controls svg { width: 18px; height: 18px; fill: #fff; }
       #volume { width: 110px; accent-color: #fff; cursor: pointer; }
       #volume-label { min-width: 32px; text-align: right; font-variant-numeric: tabular-nums; opacity: 0.8; }
+
+      #picker {
+        position: fixed; inset: 0; z-index: 30; display: grid; place-items: center;
+        background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(6px);
+        color: #fff; font: 13px -apple-system, BlinkMacSystemFont, sans-serif;
+      }
+      #picker[hidden] { display: none; }
+      #picker .panel {
+        box-sizing: border-box; width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 32px);
+        overflow: auto; padding: 20px; border-radius: 16px; background: rgba(20, 20, 20, 0.92);
+      }
+      #picker .head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+      #picker h1 { margin: 0; font-size: 16px; font-weight: 600; }
+      #picker-close {
+        all: unset; cursor: pointer; width: 28px; height: 28px;
+        display: grid; place-items: center; border-radius: 50%;
+      }
+      #picker-close[hidden] { display: none; }
+      #picker-close:hover { background: rgba(255, 255, 255, 0.15); }
+      #picker-close:focus-visible { outline: 2px solid #fff; }
+      #picker-close svg { width: 18px; height: 18px; fill: #fff; }
+      #presets { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+      @media (max-width: 480px) { #presets { grid-template-columns: 1fr; } }
+      #presets button {
+        all: unset; cursor: pointer; border-radius: 10px; overflow: hidden;
+        background: rgba(255, 255, 255, 0.06); outline: 2px solid transparent; outline-offset: 2px;
+      }
+      #presets button:hover { background: rgba(255, 255, 255, 0.12); }
+      #presets button[aria-pressed="true"] { outline-color: rgba(255, 255, 255, 0.6); }
+      #presets button:focus-visible { outline-color: #fff; }
+      #presets img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: #111; }
+      #presets span { display: block; padding: 8px 10px; }
+      #custom { margin-top: 16px; }
+      #custom label { display: block; margin-bottom: 6px; opacity: 0.8; }
+      #custom .row { display: flex; gap: 8px; }
+      #custom-url {
+        flex: 1; min-width: 0; padding: 8px 12px; border-radius: 8px; font: inherit; color: #fff;
+        border: 1px solid rgba(255, 255, 255, 0.25); background: rgba(255, 255, 255, 0.06);
+      }
+      #custom-url:focus-visible { outline: 2px solid #fff; outline-offset: 1px; }
+      #custom button {
+        padding: 8px 16px; border: 0; border-radius: 8px; cursor: pointer;
+        background: #fff; color: #000; font: inherit; font-weight: 600;
+      }
+      #custom button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+      #picker-error { min-height: 1.3em; margin: 8px 0 0; color: #ff8a80; }
     </style>
   </head>
   <body>
@@ -39,12 +85,40 @@
       <button id="mute" aria-label="Mute"></button>
       <input id="volume" type="range" min="0" max="100" step="1" aria-label="Volume" />
       <span id="volume-label"></span>
+      <button id="stream" aria-label="Change stream" title="Change stream (S)">
+        <svg viewBox="0 0 24 24"><path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z"/></svg>
+      </button>
       <button id="fullscreen" aria-label="Toggle full screen">
         <svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
       </button>
     </div>
+    <div id="picker" role="dialog" aria-modal="true" aria-labelledby="picker-title" hidden>
+      <div class="panel">
+        <div class="head">
+          <h1 id="picker-title">Choose a stream</h1>
+          <button id="picker-close" aria-label="Close">
+            <svg viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+          </button>
+        </div>
+        <div id="presets"></div>
+        <form id="custom" novalidate>
+          <label for="custom-url">Or paste a YouTube link</label>
+          <div class="row">
+            <input id="custom-url" type="text" placeholder="https://www.youtube.com/watch?v=…"
+              autocomplete="off" spellcheck="false" aria-describedby="picker-error" />
+            <button type="submit">Play</button>
+          </div>
+          <p id="picker-error" role="alert"></p>
+        </form>
+      </div>
+    </div>
     <script>
-      const VIDEO_ID = '__VIDEO_ID__';
+      const PRESETS = [
+        { id: 'tRsQsTMvPNg', title: 'Claude FM' },
+        { id: 'rFZHOHl-L8A', title: 'Lofi Girl' },
+        { id: '4xDzrJKXOOY', title: 'Lofi Girl synthwave' },
+      ];
+      const VIDEO_ID = /^[\w-]{11}$/;
       const ICONS = {
         play: '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>',
         pause: '<svg viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>',
@@ -59,8 +133,10 @@
         volume: Number.isFinite(saved.volume) ? saved.volume : 80,
         muted: !!saved.muted,
         playing: true,
+        stream: saved.stream && VIDEO_ID.test(saved.stream.id) ? saved.stream : null,
       };
       let player;
+      let apiReady = false;
       let audioSynced = false;
 
       function render() {
@@ -99,9 +175,88 @@
         state.playing ? player.pauseVideo() : player.playVideo();
       }
 
+      function parseVideoId(input) {
+        const text = input.trim();
+        if (VIDEO_ID.test(text)) return text;
+        let url;
+        try {
+          url = new URL(/^https?:\/\//i.test(text) ? text : `https://${text}`);
+        } catch {
+          return null;
+        }
+        const host = url.hostname.replace(/^(www|m|music)\./, '');
+        let id = null;
+        if (host === 'youtu.be') id = url.pathname.split('/')[1];
+        else if (host === 'youtube.com' || host === 'youtube-nocookie.com') {
+          id = url.searchParams.get('v') || (url.pathname.match(/^\/(?:live|embed|shorts|v)\/([^/]+)/) || [])[1];
+        }
+        return id && VIDEO_ID.test(id) ? id : null;
+      }
+
+      function selectStream(stream) {
+        state.stream = stream;
+        window.ytbla.saveSettings({ stream });
+        closePicker();
+        if (player && player.loadVideoById) {
+          audioSynced = false;
+          player.loadVideoById(stream.id);
+        } else {
+          startPlayer();
+        }
+      }
+
+      function renderPresets() {
+        $('presets').replaceChildren(...PRESETS.map((preset) => {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.setAttribute('aria-pressed', String(state.stream?.id === preset.id));
+          const img = document.createElement('img');
+          img.src = `https://i.ytimg.com/vi/${preset.id}/mqdefault.jpg`;
+          img.alt = '';
+          const label = document.createElement('span');
+          label.textContent = preset.title;
+          button.append(img, label);
+          button.addEventListener('click', () => selectStream({ id: preset.id }));
+          return button;
+        }));
+      }
+
+      const isPicking = () => !$('picker').hidden;
+      let focusBeforePicker;
+
+      function openPicker(error = '') {
+        if (!isPicking()) focusBeforePicker = document.activeElement;
+        renderPresets();
+        $('custom-url').value = state.stream?.url || '';
+        $('picker-error').textContent = error;
+        $('picker-close').hidden = !state.stream;
+        $('picker').hidden = false;
+        $('controls').inert = true;
+        document.body.classList.add('picking');
+        window.ytbla.setPickerOpen(true);
+        const current = document.querySelector('#presets [aria-pressed="true"]');
+        (current || (state.stream ? $('custom-url') : document.querySelector('#presets button'))).focus();
+      }
+
+      function closePicker() {
+        if (!state.stream || !isPicking()) return;
+        $('picker').hidden = true;
+        $('controls').inert = false;
+        document.body.classList.remove('picking');
+        window.ytbla.setPickerOpen(false);
+        if (focusBeforePicker && focusBeforePicker.isConnected) focusBeforePicker.focus();
+        wake();
+      }
+
       function onYouTubeIframeAPIReady() {
+        apiReady = true;
+        startPlayer();
+      }
+
+      function startPlayer() {
+        if (!apiReady || !state.stream || player) return;
         player = new YT.Player('player', {
-          videoId: VIDEO_ID,
+          videoId: state.stream.id,
           width: '100%',
           height: '100%',
           playerVars: {
@@ -120,8 +275,11 @@
             onReady: (e) => {
               applyAudio();
               e.target.setPlaybackQuality('highres');
-              e.target.playVideo();
+              // The stream may have been switched while the player was still loading.
+              if (e.target.getVideoData().video_id === state.stream.id) e.target.playVideo();
+              else e.target.loadVideoById(state.stream.id);
             },
+            onError: () => openPicker("YouTube can't play that video here. Choose another stream."),
             onStateChange: (e) => {
               if (e.data === YT.PlayerState.PLAYING) {
                 // YouTube restores its own stored volume when playback starts.
@@ -139,6 +297,20 @@
       $('mute').addEventListener('click', toggleMute);
       $('volume').addEventListener('input', (e) => setVolume(e.target.valueAsNumber));
       $('fullscreen').addEventListener('click', () => window.ytbla.toggleFullscreen());
+      $('stream').addEventListener('click', () => openPicker());
+      $('picker-close').addEventListener('click', closePicker);
+      $('picker').addEventListener('click', (e) => e.target === $('picker') && closePicker());
+      $('custom').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const url = $('custom-url').value.trim();
+        const id = parseVideoId(url);
+        if (!id) {
+          $('picker-error').textContent = "That doesn't look like a YouTube video or live stream link.";
+          $('custom-url').focus();
+          return;
+        }
+        selectStream(PRESETS.some((p) => p.id === id) ? { id } : { id, url });
+      });
       let clickTimer;
       $('shield').addEventListener('click', () => {
         clearTimeout(clickTimer);
@@ -151,6 +323,7 @@
 
       let wheelDelta = 0;
       document.addEventListener('wheel', (e) => {
+        if (isPicking()) return;
         // macOS turns Shift + vertical wheel into horizontal scroll.
         const delta = e.shiftKey && Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
         wheelDelta += delta;
@@ -174,7 +347,12 @@
 
       document.addEventListener('keydown', (e) => {
         if (e.metaKey || e.ctrlKey || e.altKey) return;
+        if (isPicking()) {
+          if (e.code === 'Escape') closePicker();
+          return;
+        }
         const handled = {
+          KeyS: () => openPicker(),
           Space: togglePlay,
           KeyK: togglePlay,
           KeyM: toggleMute,
@@ -192,6 +370,7 @@
 
       render();
       wake();
+      if (!state.stream) openPicker();
     </script>
     <script src="https://www.youtube.com/iframe_api"></script>
   </body>
