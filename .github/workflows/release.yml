@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     branches: [main]
-    paths-ignore: ['**.md', '.gitignore']
+    paths-ignore: ['**.md', '**.txt', 'LICENSE', 'docs/**', '.gitignore']
   workflow_dispatch:
 
 permissions:
