@@ -2,6 +2,7 @@ const { app, BrowserWindow, webFrameMain, ipcMain, screen } = require('electron'
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const { startAutoUpdates } = require('./updater');
 
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 
@@ -166,5 +167,8 @@ ipcMain.on('picker-open', (e, open) => {
   open ? pickerOpen.add(e.sender.id) : pickerOpen.delete(e.sender.id);
 });
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  createWindow();
+  startAutoUpdates();
+});
 app.on('window-all-closed', () => app.quit());
