@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#16131f"/>
+      <stop offset="1" stop-color="#2a1d3d"/>
+    </linearGradient>
+    <linearGradient id="sun" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffc58a"/>
+      <stop offset="0.55" stop-color="#ff8a7a"/>
+      <stop offset="1" stop-color="#e2558f"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#ff8a7a" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#ff8a7a" stop-opacity="0"/>
+    </radialGradient>
+    <mask id="stripes">
+      <rect width="1024" height="1024" fill="#fff"/>
+      <rect x="0" y="566" width="1024" height="12" fill="#000"/>
+      <rect x="0" y="616" width="1024" height="18" fill="#000"/>
+      <rect x="0" y="668" width="1024" height="24" fill="#000"/>
+      <rect x="0" y="722" width="1024" height="30" fill="#000"/>
+    </mask>
+    <clipPath id="tile">
+      <rect x="100" y="100" width="824" height="824" rx="185"/>
+    </clipPath>
+  </defs>
+  <g clip-path="url(#tile)">
+    <rect x="100" y="100" width="824" height="824" fill="url(#bg)"/>
+    <circle cx="512" cy="540" r="360" fill="url(#glow)"/>
+    <circle cx="512" cy="540" r="230" fill="url(#sun)" mask="url(#stripes)"/>
+  </g>
+</svg>

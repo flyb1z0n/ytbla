@@ -2,7 +2,7 @@
   "name": "ytbla",
   "productName": "ytbla",
   "version": "1.0.0",
-  "description": "Distraction-free player for a single YouTube video",
+  "description": "A minimal background-music player for your second screen",
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",
