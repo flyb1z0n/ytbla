@@ -17,7 +17,10 @@
     "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
     "mac": {
       "category": "public.app-category.video",
-      "target": [{ "target": "dmg", "arch": ["universal"] }],
+      "target": [
+        { "target": "dmg", "arch": ["universal"] },
+        { "target": "zip", "arch": ["universal"] }
+      ],
       "identity": "-",
       "hardenedRuntime": false
     },
