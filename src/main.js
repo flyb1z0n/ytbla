@@ -3,8 +3,6 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
-const VIDEO_ID = 'tRsQsTMvPNg';
-
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 
 const settingsPath = () => path.join(app.getPath('userData'), 'settings.json');
@@ -23,9 +21,7 @@ function writeSettings(patch) {
 
 // YouTube refuses to play embeds without a real HTTP origin (error 153 on file://).
 function startServer() {
-  const html = fs
-    .readFileSync(path.join(__dirname, 'player.html'), 'utf8')
-    .replace('__VIDEO_ID__', VIDEO_ID);
+  const html = fs.readFileSync(path.join(__dirname, 'player.html'), 'utf8');
   const server = http.createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
     res.end(html);
@@ -130,6 +126,7 @@ async function createWindow() {
 
   win.webContents.on('before-input-event', (event, input) => {
     if (input.type !== 'keyDown' || input.meta || input.control || input.alt) return;
+    if (pickerOpen.has(win.webContents.id)) return;
     if (input.key === 'Escape' && win.isFullScreen()) {
       event.preventDefault();
       win.setFullScreen(false);
@@ -162,6 +159,12 @@ ipcMain.on('get-settings', (e) => {
 });
 
 ipcMain.on('save-settings', (_e, patch) => writeSettings(patch));
+
+// The picker has a text field, so window-level shortcuts must not swallow typed keys.
+const pickerOpen = new Set();
+ipcMain.on('picker-open', (e, open) => {
+  open ? pickerOpen.add(e.sender.id) : pickerOpen.delete(e.sender.id);
+});
 
 app.whenReady().then(createWindow);
 app.on('window-all-closed', () => app.quit());
